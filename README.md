@@ -1,51 +1,61 @@
 # Blacklist App
 
-Microservicio REST para la gestión centralizada de la lista negra global de emails de la compañía. Permite a los sistemas internos consultar si un email está bloqueado, así como agregar nuevos emails a la lista negra.
+Microservicio REST para gestionar una lista negra centralizada de correos electrónicos. El proyecto separa la API en capas de rutas, servicios, repositorios, modelos y utilidades, e incluye pruebas automatizadas, Docker y CI.
 
-## Contexto del proyecto
+## Tecnologías
 
-Una compañía multinacional gestiona cientos de aplicaciones internas, cada una con su propia lógica de bloqueo de emails, lo que ha generado inconsistencias y problemas legales. Este microservicio centraliza esa lógica en un único punto de verdad.
+- Python 3.11
+- Flask
+- Flask-SQLAlchemy
+- Flask-Marshmallow
+- PostgreSQL
+- Poetry
+- pytest / pytest-cov
+- Docker / Docker Compose
+- GitHub Actions
 
-## Stack tecnológico
+## Arquitectura
 
-| Tecnología | Uso |
-|---|---|
-| Python 3.11 | Lenguaje base |
-| Flask 3.0 | Framework web |
-| Flask-SQLAlchemy | ORM para PostgreSQL |
-| Flask-RESTful | Estructura de API REST |
-| Flask-Marshmallow | Serialización/validación de datos |
-| Flask-JWT-Extended | Soporte de autenticación por token |
-| PostgreSQL 14 | Base de datos relacional |
-| Poetry | Gestión de dependencias y entornos virtuales |
-| pytest / pytest-cov | Testing y cobertura de código |
-| Docker / Docker Compose | Contenerización y orquestación local |
+```text
+src/
+├── db/              # Configuración y modelos de persistencia
+├── middleware/      # Autenticación Bearer Token
+├── models/          # Modelos y schemas
+├── repositories/    # Acceso a datos
+├── routes/          # Endpoints REST
+├── services/        # Lógica de negocio
+└── utils/           # Validaciones y utilidades
 
-## Estructura del proyecto
+tests/
+├── unit/            # Pruebas unitarias
+└── integration/     # Pruebas de integración
+```
 
-blacklist_app/
-├── src/
-│ ├── db/ # Configuración e inicialización de la base de datos
-│ ├── middleware/ # Autenticación por Bearer Token
-│ ├── models/ # Modelos SQLAlchemy y schemas de Marshmallow
-│ ├── repositories/ # Capa de acceso a datos
-│ ├── routes/ # Definición de endpoints REST
-│ ├── services/ # Lógica de negocio
-│ └── utils/ # Utilidades (validaciones, IP del cliente, etc.)
-├── tests/
-│ ├── unit/ # Tests unitarios con mocks
-│ └── integration/ # Tests de integración contra los endpoints reales
-├── Dockerfile
-├── docker-compose.yml
-└── pyproject.toml
+## Funcionalidades
 
+- Registrar un correo en la lista negra.
+- Consultar si un correo está bloqueado.
+- Registrar información de la solicitud, incluida la IP de origen.
+- Validar datos de entrada mediante schemas.
+- Controlar autenticación mediante Bearer Token.
+- Exponer un endpoint de health check.
+- Ejecutar pruebas unitarias y de integración.
+- Ejecutar la suite de pruebas automáticamente mediante GitHub Actions.
+- Ejecutar la aplicación y PostgreSQL mediante Docker Compose.
 
-## Endpoints disponibles
+## API
 
-### `POST /blacklists`
-Agrega un email a la lista negra global. Requiere autenticación Bearer Token.
+### POST /blacklists
 
-**Request body:**
+Requiere:
+
+```http
+Authorization: Bearer <TOKEN>
+Content-Type: application/json
+```
+
+Ejemplo:
+
 ```json
 {
   "email": "usuario@example.com",
@@ -54,83 +64,66 @@ Agrega un email a la lista negra global. Requiere autenticación Bearer Token.
 }
 ```
 
-**Respuesta (201):**
-```json
-{
-  "id": "a1b2c3d4-...",
-  "email": "usuario@example.com",
-  "message": "Email added to blacklist successfully",
-  "created_at": "2026-08-28T10:00:00"
-}
-```
+### GET /blacklists/<email>
 
-Internamente, el servicio también registra la IP de origen de la solicitud y la fecha/hora del registro.
+Consulta el estado de un correo. Requiere Bearer Token.
 
-### `GET /blacklists/<email>`
-Consulta si un email está en la lista negra global. Requiere autenticación Bearer Token.
+### GET /blacklists/ping
 
-**Respuesta (200):**
-```json
-{
-  "is_blacklisted": true,
-  "email": "usuario@example.com",
-  "blocked_reason": "Actividad de spam detectada"
-}
-```
+Endpoint público de health check.
 
-### `GET /blacklists/ping`
-Health check del servicio, sin autenticación.
+## Configuración
 
-## Variables de entorno
+Crea un archivo `.env` a partir de `.env.example`.
 
-Copia `.env.example` a `.env` y configura:
+Variables principales:
 
+```env
 DATABASE_URL=postgresql://usuario:password@host:puerto/blacklist_db
 BEARER_TOKEN=tu-token-secreto
+```
 
+Generación de un token aleatorio:
 
-Para generar un token seguro:
 ```bash
 python3 -c "import secrets; print(secrets.token_urlsafe(32))"
 ```
 
-## Cómo correr el proyecto localmente
+No subas `.env` ni credenciales reales al repositorio.
+
+## Ejecución local
 
 ```bash
 cd blacklist_app
 poetry install
-docker compose up -d db      # Levanta solo la base de datos PostgreSQL
+docker compose up -d db
 poetry run flask --app src.main run
 ```
 
-## Cómo correr los tests
+La API local queda disponible en el puerto configurado por Flask.
+
+## Pruebas
 
 ```bash
 poetry run pytest --cov=src --cov-report=term-missing
 ```
 
-El proyecto cuenta con **50 tests** (unitarios y de integración) que alcanzan una **cobertura de 97.21%**, superando el mínimo del 90% exigido.
-
-- **Tests unitarios**: validan servicios, repositorio, middleware de autenticación, schemas y utilidades de forma aislada, usando mocks para no depender de la base de datos.
-- **Tests de integración**: prueban los endpoints reales end-to-end contra una base de datos SQLite temporal, incluyendo casos de éxito, validaciones fallidas, conflictos (email duplicado) y autenticación.
-
-## Integración continua
-
-Cada `push` a la rama `master` ejecuta automáticamente el workflow definido en `.github/workflows/pruebas.yml`, el cual:
-
-1. Instala Python 3.11 y Poetry
-2. Instala las dependencias del proyecto
-3. Corre la suite completa de tests con reporte de cobertura
-4. Falla el pipeline si la cobertura baja del 90% (configurado en `pyproject.toml`)
-
-Esto garantiza que ningún cambio se integre a la rama principal sin pasar las pruebas.
+La configuración del proyecto exige un mínimo de 90 % de cobertura.
 
 ## Docker
 
-El proyecto incluye `Dockerfile` y `docker-compose.yml` para levantar la aplicación junto a una instancia de PostgreSQL de forma reproducible:
+Para levantar aplicación y PostgreSQL:
 
 ```bash
 docker compose up --build
 ```
 
-La app queda expuesta en `http://localhost:5001`.
+La aplicación se ejecuta dentro del contenedor mediante Gunicorn.
+
+## Integración continua
+
+GitHub Actions ejecuta automáticamente la suite de pruebas en cambios dirigidos a `main` y en pull requests hacia esa rama.
+
+## Objetivo técnico
+
+Este proyecto demuestra experiencia práctica con desarrollo de APIs REST en Python, separación de responsabilidades, persistencia relacional, autenticación, testing automatizado, contenerización y CI.
