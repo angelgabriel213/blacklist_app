@@ -57,7 +57,7 @@
               "pm.test(\"Response contains success message\", function () {",
               "    var jsonData = pm.response.json();",
               "    pm.expect(jsonData.message).to.include(\"added to blacklist successfully\");",
-              "    pm.expect(jsonData.email).to.eql(pm.variables.get("test_email"));",
+              "    pm.expect(jsonData.email).to.eql(pm.variables.get('test_email'));",
               "});"
             ],
             "type": "text/javascript"
