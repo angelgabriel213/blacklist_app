@@ -2,9 +2,9 @@ name: Pruebas unitarias
 
 on:
   push:
-    branches: [ master ]
+    branches: [ main ]
   pull_request:
-    branches: [ master ]
+    branches: [ main ]
   workflow_dispatch:
 
 defaults:
@@ -31,5 +31,4 @@ jobs:
         run: poetry install --no-interaction
 
       - name: Correr pruebas con cobertura
-        id: correr-pruebas
         run: poetry run pytest --cov=src --cov-report=term-missing
