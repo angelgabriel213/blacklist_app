@@ -6,7 +6,6 @@ on:
   pull_request:
     branches: [ master ]
   workflow_dispatch:
-
 defaults:
   run:
     working-directory: blacklist_app
@@ -30,7 +29,7 @@ jobs:
           echo "BEARER_TOKEN=test123" >> .env
 
       - name: Levantar servicios con Docker Compose
-        run: docker-compose up -d --build
+        run: docker compose up -d --build
 
       - name: Esperar a que el servicio esté listo (Health Check)
         run: |
