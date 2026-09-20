@@ -43,7 +43,7 @@ jobs:
 
       - name: Ejecutar colección de Postman
         run: |
-          newman run "Blacklist_App_API.postman_collection.json" \
+          newman run "postman_collection" \
             --env-var "base_url=http://localhost:5001" \
             --env-var "bearer_token=test123" \
             --env-var "test_email=ci-integration-test@example.com" \
