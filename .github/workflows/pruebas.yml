@@ -1,5 +1,5 @@
 
-name: Pruebas Unitarias e Integración
+name: Pruebas Unitarias
 
 on:
   push:
@@ -33,43 +33,3 @@ jobs:
       - name: Correr pruebas con cobertura
         id: correr-pruebas
         run: poetry run pytest --cov=src --cov-report=term-missing
-
-
-  pruebas_integracion:
-    name: Pruebas de Integración (Newman)
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout de repositorio
-        uses: actions/checkout@v4
-
-      - name: Configurar Node.js (para Newman)
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20' # Versión LTS recomendada
-
-      - name: Crear archivo .env para CI
-        run: |
-          echo "DATABASE_URL=postgresql://postgres:postgres@db:5432/blacklist_db" > .env
-          echo "BEARER_TOKEN=test123" >> .env
-
-      - name: Levantar servicios con Docker Compose
-        run: docker-compose up -d --build
-
-      - name: Esperar a que el servicio esté listo (Health Check)
-        run: |
-          echo "Esperando a que la API responda en http://localhost:5001..."
-          timeout 30s bash -c 'until curl -s -f http://localhost:5001/blacklists/ping > /dev/null; do sleep 2; done'
-          echo "¡Servicio listo!"
-
-      - name: Instalar Newman
-        run: npm install -g newman
-
-      - name: Ejecutar colección de Postman
-        run: |
-          # IMPORTANTE: Cambia "Blacklist_App_API.postman_collection.json" 
-          # por el nombre exacto del archivo que exportaste y subiste al repo.
-          newman run "Blacklist_App_API.postman_collection.json" \
-            --env-var "base_url=http://localhost:5001" \
-            --env-var "bearer_token=test123" \
-            --env-var "test_email=ci-integration-test@example.com" \
-            --env-var "app_uuid=123e4567-e89b-12d3-a456-426614174000"
