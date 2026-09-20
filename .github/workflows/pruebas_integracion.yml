@@ -28,35 +28,39 @@ jobs:
         run: |
           echo "DATABASE_URL=postgresql://postgres:postgres@db:5432/blacklist_db" > .env
           echo "BEARER_TOKEN=test123" >> .env
-          cat .env  # Mostrar el contenido para verificar
+          echo "POSTGRES_USER=postgres" >> .env
+          echo "POSTGRES_PASSWORD=postgres" >> .env
+          echo "POSTGRES_DB=blacklist_db" >> .env
+          echo "Archivo .env generado:"
+          cat .env
 
       - name: Levantar servicios con Docker Compose
         run: |
           docker compose up -d --build
-          echo "Esperando 10 segundos para que los contenedores inicien..."
-          sleep 10
-          docker compose ps  # Mostrar estado de los contenedores
+          echo "Esperando a que Docker Compose inicialice los servicios..."
+          sleep 5
+          docker compose ps
 
       - name: Esperar a que el servicio esté listo (Health Check)
         run: |
-          echo "Iniciando health check..."
-          max_attempts=30
+          echo "Iniciando health check de la API..."
+          max_attempts=20
           attempt=1
           while [ $attempt -le $max_attempts ]; do
             echo "Intento $attempt de $max_attempts..."
             if curl -s -f http://localhost:5001/blacklists/ping > /dev/null 2>&1; then
-              echo "✅ ¡Servicio listo después de $attempt intentos!"
+              echo " ¡Servicio listo después de $attempt intentos!"
               curl http://localhost:5001/blacklists/ping
               exit 0
             fi
-            echo "❌ Servicio no disponible aún. Esperando 3 segundos..."
+            echo " Servicio no disponible aún. Esperando 3 segundos..."
             sleep 3
             attempt=$((attempt + 1))
           done
-          echo "❌ ERROR: El servicio no respondió después de $max_attempts intentos"
-          echo "=== Logs de Docker ==="
+          echo " ERROR: El servicio no respondió después de $max_attempts intentos"
+          echo "=== Logs de la aplicación ==="
           docker compose logs app
-          echo "====================="
+          echo "============================="
           exit 1
 
       - name: Instalar Newman
