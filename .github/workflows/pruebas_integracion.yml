@@ -68,7 +68,9 @@ jobs:
 
       - name: Ejecutar colección de Postman
         run: |
-          newman run "postman_collection" \
+          # El archivo está en la carpeta postman/ en la raíz del repo
+          cd ..
+          newman run "postman/postman_collection" \
             --env-var "base_url=http://localhost:5001" \
             --env-var "bearer_token=test123" \
             --env-var "test_email=ci-integration-test@example.com" \
